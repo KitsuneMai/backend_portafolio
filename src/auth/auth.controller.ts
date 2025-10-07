@@ -27,8 +27,8 @@ export class AuthController {
     const token = await this.authService.login(user);
     res.cookie('jwt', token, {
       httpOnly: true,
-      secure: true, // ✅ obligatorio con SameSite: 'none'
-      sameSite: 'none', // ✅ permite cookies entre dominios distintos (Firebase y Cloud Run)
+      secure: false, //  obligatorio con SameSite: 'none'
+      sameSite: 'lax', //  permite cookies entre dominios distintos (Firebase y Cloud Run)
       maxAge: 1000 * 60 * 60 * 24, // 1 día
     });
     return { message: 'Login exitoso', user };

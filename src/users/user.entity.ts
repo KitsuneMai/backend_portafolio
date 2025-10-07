@@ -1,4 +1,6 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn} from "typeorm";
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, OneToMany} from "typeorm";
+import { Sale } from "src/sales/entities/sale.entity";
+import { Exclude } from "class-transformer";
 
 @Entity()
 export class User{
@@ -12,9 +14,14 @@ export class User{
     name: string;
 
     @Column()
+    @Exclude()
     password: string;
 
-    @Column({default: 'user'}) // roles: admin, contador, usuario, etc.
+    @OneToMany(() => Sale, (sale) => sale.user)
+    sales: Sale[];
+
+
+    @Column({default: 'user'}) 
     role: string;
 
     @CreateDateColumn()
