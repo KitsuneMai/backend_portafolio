@@ -15,8 +15,11 @@ export class Product {
   @Column('decimal', { precision: 10, scale: 2 })
   basePrice: number; // precio antes de IVA
 
-  @Column('decimal', { precision: 5, scale: 2, default: 19 })
-  ivaPercentage: number; // IVA en %
+  @Column('decimal', { precision: 5, scale: 2, default: 0, nullable: true })
+  ivaPercentage?: number; // IVA en %
+
+  @Column('decimal', { precision: 5, scale: 2, nullable: true })
+  profitPercentage?: number;
 
   @Column('decimal', { precision: 10, scale: 2, default: 0 })
   stock: number;

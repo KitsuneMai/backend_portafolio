@@ -23,11 +23,14 @@ export class SaleItem {
   @Column('decimal', { precision: 10, scale: 2 })
   price: number; // base price
 
-  @Column('decimal', { precision: 5, scale: 2 })
-  ivaPercentage: number;
+  @Column('decimal', { precision: 5, scale: 2, nullable: true })
+  ivaPercentage?: number;
+
+  @Column('decimal', { precision: 5, scale: 2, nullable: true })
+  profitPercentage?: number; // opcional
 
   @Column('decimal', { precision: 10, scale: 2 })
-  priceWithIva: number;
+  finalPrice: number; // precio con IVA o ganancia incluida
 
   @Column('decimal', { precision: 10, scale: 2 })
   subtotal: number; // quantity * price

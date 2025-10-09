@@ -1,6 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, OneToMany} from "typeorm";
 import { Sale } from "src/sales/entities/sale.entity";
 import { Exclude } from "class-transformer";
+import { Purchase } from "src/purchases/entities/purchase.entity";
 
 @Entity()
 export class User{
@@ -19,6 +20,9 @@ export class User{
 
     @OneToMany(() => Sale, (sale) => sale.user)
     sales: Sale[];
+
+    @OneToMany(() => Purchase, (purchase) => purchase.user)
+    purchases: Purchase[];
 
 
     @Column({default: 'user'}) 

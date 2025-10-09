@@ -14,6 +14,12 @@ export class SalesController {
     return this.salesService.create(dto, user);
   }
 
+  @Get('metrics')
+  async getMetrics() {
+    return this.salesService.getFinancialMetrics();
+  }
+
+
   /**
    * Obtener todas las ventas
    */
