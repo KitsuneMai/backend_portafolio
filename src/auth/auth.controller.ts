@@ -46,8 +46,9 @@ export class AuthController {
   async logout(@Res({ passthrough: true }) res: Response) {
     res.clearCookie('jwt', {
       httpOnly: true,
-      sameSite: 'none',
-      secure: true,
+      sameSite: 'lax',
+      secure: false,
+      path: '/',
     });
     return { message: 'Sesión cerrada correctamente' };
   }
