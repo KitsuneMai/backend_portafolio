@@ -67,39 +67,49 @@ export class PurchasesService {
   }
 
     async getFinancialMetrics() {
-    const purchases = await this.purchaseRepository.find({ relations: ['items', 'items.product'] });
+      const purchases = await this.purchaseRepository.find({ relations: ['items', 'items.product'] });
 
-    let totalSpent = 0;
-    let totalStockAdded = 0;
-    const productStats: Record<number, { totalQuantity: number; totalCost: number }> = {};
+      let totalSpent = 0;
+      let totalStockAdded = 0;
+      const productStats: Record<number, { totalQuantity: number; totalCost: number }> = {};
+      const dailySpent: Record<string, number> = {};
 
-    for (const purchase of purchases) {
-      for (const item of purchase.items) {
-        const cost = Number(item.price) * Number(item.quantity);
-        totalSpent += cost;
-        totalStockAdded += Number(item.quantity);
+      for (const purchase of purchases) {
+        const key = purchase.date.toISOString().slice(0,10); // YYYY-MM-DD
+        let purchaseTotal = 0;
 
-        if (!productStats[item.product.id]) {
-          productStats[item.product.id] = { totalQuantity: 0, totalCost: 0 };
+        for (const item of purchase.items) {
+          const cost = Number(item.price) * Number(item.quantity);
+          totalSpent += cost;
+          totalStockAdded += Number(item.quantity);
+          purchaseTotal += cost;
+
+          if (!productStats[item.product.id]) {
+            productStats[item.product.id] = { totalQuantity: 0, totalCost: 0 };
+          }
+
+          productStats[item.product.id].totalQuantity += Number(item.quantity);
+          productStats[item.product.id].totalCost += cost;
         }
 
-        productStats[item.product.id].totalQuantity += Number(item.quantity);
-        productStats[item.product.id].totalCost += cost;
+        dailySpent[key] = (dailySpent[key] || 0) + purchaseTotal;
       }
+
+      const profitability = Object.entries(productStats).map(([productId, stats]) => ({
+        productId,
+        avgPrice: stats.totalCost / stats.totalQuantity,
+        totalQuantity: stats.totalQuantity,
+      }));
+
+      return {
+        totalSpent,
+        totalStockAdded,
+        totalProfit: totalSpent, // si quieres el profit de purchases se puede ajustar, por ahora es gasto total
+        dailySpent,
+        profitability,
+      };
     }
 
-    const profitability = Object.entries(productStats).map(([productId, stats]) => ({
-      productId,
-      avgPrice: stats.totalCost / stats.totalQuantity,
-      totalQuantity: stats.totalQuantity,
-    }));
-
-    return {
-      totalSpent,
-      totalStockAdded,
-      profitability,
-    };
-  }
 
   async findAll() {
     return this.purchaseRepository.find({ relations: ['items', 'items.product', 'user'] });

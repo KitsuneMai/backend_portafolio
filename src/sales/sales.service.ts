@@ -166,16 +166,37 @@ export class SalesService {
     });
   }
 
-    async getFinancialMetrics() {
-    // Traer todas las ventas con items y producto
-    const sales = await this.saleRepository.find({
-      relations: ['items', 'items.product'],
+  async getFinancialMetrics() {
+    const sales = await this.saleRepository.find({ relations: ['items', 'items.product'] });
+    const purchases = await this.purchasesService.findAll(); // ya trae items y product
+
+    let totalRevenue = 0;
+    let totalSpent = 0;
+
+    const dailyRevenue: Record<string, number> = {};
+    const dailySpent: Record<string, number> = {};
+
+    // calcular dailyRevenue
+    sales.forEach(sale => {
+      const key = sale.date.toISOString().slice(0,10);
+      dailyRevenue[key] = (dailyRevenue[key] || 0) + Number(sale.total);
+      totalRevenue += Number(sale.total);
     });
 
-    // Traer todas las compras con items y producto
-    const purchases = await this.purchasesService.findAll(); // ya tienes items y product
+    // calcular dailySpent
+    purchases.forEach(p => {
+      const key = p.date.toISOString().slice(0,10);
+      const cost = p.items.reduce((sum, i) => sum + i.price * i.quantity, 0);
+      dailySpent[key] = (dailySpent[key] || 0) + cost;
+      totalSpent += cost;
+    });
 
-    // Agrupar compras por producto para calcular costo promedio
+    // calcular profit diario
+    const dailyProfit = Object.fromEntries(
+      Object.keys(dailyRevenue).map(key => [key, (dailyRevenue[key] || 0) - (dailySpent[key] || 0)])
+    );
+
+    // cálculo de productMetrics como antes
     const costMap: Record<number, { totalQty: number; totalCost: number }> = {};
     for (const purchase of purchases) {
       for (const item of purchase.items) {
@@ -186,17 +207,15 @@ export class SalesService {
       }
     }
 
-    // Agrupar ventas por producto y calcular métricas
     const metricsMap: Record<number, any> = {};
     for (const sale of sales) {
       for (const item of sale.items) {
         const pid = item.product.id;
         const soldQty = Number(item.quantity);
-        const revenue = Number(item.total); // total por item
+        const revenue = Number(item.total);
         const costInfo = costMap[pid] || { totalQty: 0, totalCost: 0 };
         const avgCost = costInfo.totalQty ? costInfo.totalCost / costInfo.totalQty : 0;
         const profit = revenue - soldQty * avgCost;
-        const margin = avgCost ? profit / (soldQty * avgCost) : 0;
 
         if (!metricsMap[pid]) {
           metricsMap[pid] = {
@@ -216,21 +235,20 @@ export class SalesService {
       }
     }
 
-    // Calcular rentabilidad promedio
-    const result = Object.values(metricsMap).map((m) => ({
+    const productMetrics = Object.values(metricsMap).map(m => ({
       ...m,
       avgProfitMargin: m.totalCost ? +(m.totalProfit / m.totalCost).toFixed(2) : 0,
     }));
 
-    // Crecimiento mensual (simplificado)
-    // Agrupamos por mes del año de la venta
-    const monthlyRevenue: Record<string, number> = {};
-    for (const sale of sales) {
-      const monthKey = sale.date.toISOString().slice(0, 7); // YYYY-MM
-      monthlyRevenue[monthKey] = (monthlyRevenue[monthKey] || 0) + Number(sale.total);
-    }
-
-    return { productMetrics: result, monthlyRevenue };
+    return {
+      totalRevenue,
+      totalSpent,
+      totalProfit: totalRevenue - totalSpent,
+      dailyRevenue,
+      dailySpent,
+      dailyProfit,
+      productMetrics,
+    };
   }
 
   /**
